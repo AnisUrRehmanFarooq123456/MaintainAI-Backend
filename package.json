@@ -26,5 +26,8 @@
     "qrcode": "^1.5.4",
     "rate-limit-redis": "^5.0.0",
     "react": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1"
   }
 }

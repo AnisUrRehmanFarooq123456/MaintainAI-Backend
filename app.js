@@ -6,6 +6,8 @@ import cors from "cors"
 import dotenv from "dotenv"
 
 import "./src/config/redis-client.js" // now runs AFTER .env is loaded
+import { config } from "dotenv"
+config({ path: "./.env" })
 
 import userRoutes from "./src/routes/user-routes.js"
 import assetRoutes from "./src/routes/asset-routes.js"

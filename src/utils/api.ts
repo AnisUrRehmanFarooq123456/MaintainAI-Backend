@@ -1,4 +1,6 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import { config } from "dotenv";
+config({ path: "./.env" });
+const BASE_URL = process.env.FRONTEND_URL;
 
 const getToken = (): string | null => {
   if (typeof window === "undefined") return null;

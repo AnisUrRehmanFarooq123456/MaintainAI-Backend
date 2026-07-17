@@ -6,6 +6,18 @@ import { generateQRCodeDataUrl } from "../service/qr-service.js";
 
 const CONDITIONS = ["Good", "Fair", "Poor", "Unsafe"];
 
+const getPublicBaseUrl = () => {
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (frontendUrl && !frontendUrl.includes("localhost")) {
+        return frontendUrl.replace(/\/+$/, "");
+    }
+    const nextPublicUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (nextPublicUrl && !nextPublicUrl.includes("localhost")) {
+        return nextPublicUrl.replace(/\/+$/, "");
+    }
+    throw new Error("Public frontend URL is not configured");
+};
+
 const AddAsset = async (req, res) => {
     try {
         const { name, assetCode, category, location, condition, nextServiceDate } = req.body;
@@ -25,7 +37,7 @@ const AddAsset = async (req, res) => {
             return res.status(400).send({ status: false, message: "Asset code already exists" });
         }
 
-        const publicUrl = `${process.env.FRONTEND_URL}/asset/${assetCode.trim()}`;
+        const publicUrl = `${getPublicBaseUrl()}/asset/${assetCode.trim()}`;
         const qrCodeUrl = await generateQRCodeDataUrl(publicUrl);
 
         const newAsset = new AssetModel({

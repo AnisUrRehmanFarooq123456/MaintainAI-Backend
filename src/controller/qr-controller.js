@@ -1,6 +1,18 @@
 import AssetModel from "../model/asset-model.js";
 import { generateQRCodeDataUrl } from "../service/qr-service.js";
 
+const getPublicBaseUrl = () => {
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (frontendUrl && !frontendUrl.includes("localhost")) {
+        return frontendUrl.replace(/\/+$/, "");
+    }
+    const nextPublicUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (nextPublicUrl && !nextPublicUrl.includes("localhost")) {
+        return nextPublicUrl.replace(/\/+$/, "");
+    }
+    throw new Error("Public frontend URL is not configured");
+};
+
 const GetAssetQR = async (req, res) => {
     try {
         const { assetCode } = req.params;
