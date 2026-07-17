@@ -13,6 +13,22 @@ const TriageIssue = async (req, res) => {
             });
         }
 
+        if (!process.env.GEMINI_API_KEY) {
+            console.error("[TriageIssue] GEMINI_API_KEY is missing from process.env — check your .env file and restart the server.");
+            return res.status(200).send({
+                status: true,
+                message: "AI suggestion unavailable, please fill in the details manually",
+                aiAvailable: false,
+                data: {
+                    title: "",
+                    category: "",
+                    priority: "Medium",
+                    possibleCauses: [],
+                    initialChecks: []
+                }
+            });
+        }
+
         const prompt = `You are an AI maintenance triage assistant. Given the asset context and complaint below, respond ONLY with a valid JSON object, no extra text, no markdown fences, in this exact shape:
 {
   "title": "short professional issue title",
@@ -49,15 +65,34 @@ Complaint: ${complaint}`;
             clearTimeout(timeout);
 
             if (!response.ok) {
-                throw new Error("AI service returned an error");
+                // Log the ACTUAL reason Gemini rejected the request —
+                // this is almost always an invalid/missing API key, a
+                // disabled API, or a quota/billing issue. The old code
+                // swallowed this completely.
+                const errorBody = await response.text();
+                console.error(`[TriageIssue] Gemini API error — status ${response.status}:`, errorBody);
+                throw new Error(`AI service returned status ${response.status}`);
             }
 
             const data = await response.json();
             const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+            if (!rawText) {
+                console.error("[TriageIssue] Gemini responded but with no candidate text:", JSON.stringify(data));
+                throw new Error("AI service returned an empty response");
+            }
+
             const cleaned = rawText.replace(/```json|```/g, "").trim();
-            aiResponse = JSON.parse(cleaned);
+
+            try {
+                aiResponse = JSON.parse(cleaned);
+            } catch (parseErr) {
+                console.error("[TriageIssue] Failed to parse AI response as JSON. Raw text was:", rawText);
+                throw new Error("AI service returned malformed JSON");
+            }
         } catch (aiError) {
-            console.log("AI Triage Error/Timeout: ", aiError.message);
+            clearTimeout(timeout);
+            console.error("[TriageIssue] AI Triage Error/Timeout:", aiError.message);
             return res.status(200).send({
                 status: true,
                 message: "AI suggestion unavailable, please fill in the details manually",
@@ -79,7 +114,7 @@ Complaint: ${complaint}`;
             data: aiResponse
         });
     } catch (error) {
-        console.log("Error While Running AI Triage: ", error);
+        console.error("[TriageIssue] Unhandled error:", error);
         return res.status(500).send({
             status: false,
             message: "Error While Running AI Triage"
@@ -139,7 +174,11 @@ ${maintenanceText || "None recorded"}`;
             });
             clearTimeout(timeout);
 
-            if (!response.ok) throw new Error("AI service error");
+            if (!response.ok) {
+                const errorBody = await response.text();
+                console.error(`[GetPreventiveRecommendation] Gemini API error — status ${response.status}:`, errorBody);
+                throw new Error("AI service error");
+            }
 
             const data = await response.json();
             const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -149,13 +188,14 @@ ${maintenanceText || "None recorded"}`;
             return res.status(200).send({ status: true, data: parsed });
         } catch (aiError) {
             clearTimeout(timeout);
+            console.error("[GetPreventiveRecommendation] AI error:", aiError.message);
             return res.status(200).send({
                 status: true,
                 data: { hasPattern: false, recommendation: "AI recommendation temporarily unavailable. Please review the issue history manually." }
             });
         }
     } catch (error) {
-        console.log("Error While Generating Preventive Recommendation: ", error);
+        console.error("[GetPreventiveRecommendation] Unhandled error:", error);
         return res.status(500).send({ status: false, message: "Error While Generating Preventive Recommendation" });
     }
 };
