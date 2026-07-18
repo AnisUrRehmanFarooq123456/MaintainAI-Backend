@@ -357,4 +357,20 @@ const ReopenIssue = async (req, res) => {
         });
     }
 };
-export { ReportIssue, GetAllIssues, GetIssueById, AssignTechnician, UpdateIssueStatus, ApproveIssue, ReopenIssue };
+const GetMyIssues = async (req, res) => {
+    try {
+        const reporterId = req.user.id;
+
+        const issues = await IssueModel.find({ reporterUser: reporterId })
+            .populate("asset", "name assetCode")
+            .sort({ createdAt: -1 });
+
+        return res.status(200).send({ status: true, data: issues });
+    } catch (error) {
+        return res.status(500).send({
+            status: false,
+            message: "Error While Fetching Your Issues"
+        });
+    }
+};
+export { ReportIssue, GetAllIssues, GetIssueById, AssignTechnician, UpdateIssueStatus, ApproveIssue, ReopenIssue, GetMyIssues };

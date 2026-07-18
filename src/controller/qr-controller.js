@@ -6,7 +6,7 @@ const getPublicBaseUrl = () => {
     if (frontendUrl && !frontendUrl.includes("localhost")) {
         return frontendUrl.replace(/\/+$/, "");
     }
-    const nextPublicUrl = process.env.NEXT_PUBLIC_API_URL;
+    const publicUrl = `${getPublicBaseUrl()}/asset/${asset.assetCode}`;
     if (nextPublicUrl && !nextPublicUrl.includes("localhost")) {
         return nextPublicUrl.replace(/\/+$/, "");
     }

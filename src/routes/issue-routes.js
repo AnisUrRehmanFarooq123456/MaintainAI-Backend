@@ -1,5 +1,5 @@
 import express from "express";
-import { ReportIssue, GetAllIssues, GetIssueById, AssignTechnician, UpdateIssueStatus, ApproveIssue, ReopenIssue } from "../controller/issue-controller.js";
+import { ReportIssue, GetAllIssues, GetIssueById, GetMyIssues, AssignTechnician, UpdateIssueStatus, ApproveIssue, ReopenIssue } from "../controller/issue-controller.js";
 import { verifyToken, requireRole, attachUserIfPresent } from "../middleware/auth-middleware.js";
 import { publicEndpointLimiter } from "../middleware/rate-limiter.js";
 
@@ -12,6 +12,7 @@ router.route("/api/issue/assign/:id").put(verifyToken, requireRole("admin", "sup
 router.route("/api/issue/update-status/:id").put(verifyToken, requireRole("technician", "admin"), UpdateIssueStatus);
 router.route("/api/issue/approve/:id").put(verifyToken, requireRole("supervisor"), ApproveIssue);
 router.route("/api/issue/reopen/:id").put(verifyToken, requireRole("admin", "supervisor"), ReopenIssue);
+router.route("/api/issue/my-issues").get(verifyToken, requireRole("reporter"), GetMyIssues);
 
 
 export default router;
